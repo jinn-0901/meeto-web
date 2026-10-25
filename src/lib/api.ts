@@ -6,12 +6,12 @@ export interface HealthResponse {
 }
 
 export async function checkApiHealth(): Promise<HealthResponse> {
-  const response = await fetch(\`\${API_BASE_URL}/api/health\`, {
+  const response = await fetch(`${API_BASE_URL}/api/health`, {
     headers: { Accept: "application/json" },
   });
 
   if (!response.ok) {
-    throw new Error(\`API returned HTTP \${response.status}\`);
+    throw new Error(`API returned HTTP ${response.status}`);
   }
 
   return (await response.json()) as HealthResponse;
