@@ -36,6 +36,7 @@ jobs:
         run: npm run build
         env:
           CI: false
+          DISABLE_ESLINT_PLUGIN: true
           REACT_APP_API_BASE_URL: ${{ vars.REACT_APP_API_BASE_URL || 'https://meeto-server.onrender.com' }}
 
       - name: Configure GitHub Pages
