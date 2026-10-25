@@ -37,5 +37,8 @@
       "last 1 safari version"
     ]
   },
-  "homepage": "https://jinn-0901.github.io/meeto-web"
+  "homepage": "https://jinn-0901.github.io/meeto-web",
+  "overrides": {
+    "eslint-plugin-jest": "25.7.0"
+  }
 }
