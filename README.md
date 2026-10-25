@@ -20,10 +20,10 @@ The project is being built in stages. The current scaffold provides a runnable R
 | Item | Details |
 | --- | --- |
 | Product | Meeto — browser-based video meetings |
-| Repository | \`jinn-0901/meeto-web\` |
+| Repository | `jinn-0901/meeto-web` |
 | Application | React + TypeScript + Vite |
 | Styling | Plain CSS with responsive layouts |
-| API client | \`src/lib/api.ts\` |
+| API client | `src/lib/api.ts` |
 | Development server | Vite |
 | Current status | Initial scaffold; meeting media features are planned |
 
@@ -48,14 +48,14 @@ These are planned capabilities, not claims that every feature is already impleme
 
 ## Architecture
 
-\`\`\`mermaid
+```mermaid
 flowchart TD
     Person[Participant] --> Web[Meeto Web - React]
     Web -->|HTTPS API| API[Meeto Server - Express]
     Web <-->|WebRTC signaling over WebSocket - planned| API
     Web <-->|Audio and video - planned| Media[Peer connection or SFU]
     API --> DB[(PostgreSQL - planned)]
-\`\`\`
+```
 
 - **Web app:** user interface, device controls, and client-side meeting state.
 - **Server:** meeting authorization, room membership, and signaling coordination.
@@ -74,49 +74,49 @@ The web app and server are maintained in separate repositories and should be con
 
 ### 1. Clone and install
 
-\`\`\`bash
+```bash
 git clone https://github.com/jinn-0901/meeto-web.git
 cd meeto-web
 npm install
-\`\`\`
+```
 
 ### 2. Configure the API URL
 
-Copy \`.env.example\` to \`.env.local\`:
+Copy `.env.example` to `.env.local`:
 
-\`\`\`bash
+```bash
 cp .env.example .env.local
-\`\`\`
+```
 
 Set the server's base URL:
 
-\`\`\`dotenv
+```dotenv
 VITE_API_BASE_URL=http://localhost:4000
-\`\`\`
+```
 
-Vite exposes variables prefixed with \`VITE_\` to browser code. **Never put passwords, private API keys, or server secrets in this file.**
+Vite exposes variables prefixed with `VITE_` to browser code. **Never put passwords, private API keys, or server secrets in this file.**
 
 ### 3. Start the development server
 
-\`\`\`bash
+```bash
 npm run dev
-\`\`\`
+```
 
 Open the local URL printed by Vite, usually [http://localhost:5173](http://localhost:5173).
 
 ### 4. Check code quality and build
 
-\`\`\`bash
+```bash
 npm run typecheck
 npm run build
 npm run preview
-\`\`\`
+```
 
-The production build is written to \`dist/\`.
+The production build is written to `dist/`.
 
 ## Project structure
 
-\`\`\`text
+```text
 public/
   favicon.svg
 src/
@@ -130,31 +130,31 @@ index.html                # Browser document
 package.json              # Scripts and dependencies
 vite.config.ts            # Local development configuration
 tsconfig.json             # TypeScript settings
-\`\`\`
+```
 
-Keep feature-specific code together as the application grows. Meeting UI, media-device handling, and WebRTC connection logic should be added as separate modules rather than accumulating in \`App.tsx\`.
+Keep feature-specific code together as the application grows. Meeting UI, media-device handling, and WebRTC connection logic should be added as separate modules rather than accumulating in `App.tsx`.
 
 ## API connection
 
-The client reads \`VITE_API_BASE_URL\` and uses \`src/lib/api.ts\` for requests. The server currently provides a health endpoint:
+The client reads `VITE_API_BASE_URL` and uses `src/lib/api.ts` for requests. The server currently provides a health endpoint:
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| \`GET\` | \`/api/health\` | Check that the API process is responding |
+| `GET` | `/api/health` | Check that the API process is responding |
 
 Meeting endpoints and WebSocket signaling will be documented here when they are implemented. Keep this table synchronized with the server README and actual routes.
 
 ## Troubleshooting
 
-- **The page does not start:** confirm Node.js is version 20 or later, then run \`npm install\`.
-- **API requests fail:** check \`VITE_API_BASE_URL\`, the server status, and the server's allowed frontend origin.
+- **The page does not start:** confirm Node.js is version 20 or later, then run `npm install`.
+- **API requests fail:** check `VITE_API_BASE_URL`, the server status, and the server's allowed frontend origin.
 - **Environment changes do not apply:** restart the Vite development server.
 - **A browser blocks camera or microphone access:** grant permission in browser settings and use HTTPS in deployed environments. Localhost is treated as a secure context by modern browsers.
 - **The page builds but a meeting does not connect:** a working UI is not enough; WebRTC signaling, ICE configuration, and (for restrictive networks) TURN infrastructure must also be configured.
 
 ## Security and privacy
 
-- Never commit \`.env.local\`, credentials, access tokens, or private keys.
+- Never commit `.env.local`, credentials, access tokens, or private keys.
 - Treat all browser input as untrusted; the server must enforce meeting access and authorization.
 - Ask for camera and microphone access only in response to a clear user action.
 - Do not log media, access tokens, or private meeting content.
