@@ -19,7 +19,7 @@ export default function App() {
       const result = await checkApiHealth();
       setApiState({
         kind: "success",
-        message: \`Connected to \${result.service}. API status: \${result.status}.\`,
+        message: `Connected to ${result.service}. API status: ${result.status}.`,
       });
     } catch {
       setApiState({
@@ -104,7 +104,7 @@ export default function App() {
           <p className="section-kicker">DEVELOPER PREVIEW</p>
           <h2 id="server-check-title">Check the server connection</h2>
           <p className="server-copy">This starter build includes a health check. Live video meetings are still under development.</p>
-          <p className={\`api-status api-status--\${apiState.kind}\`} role="status">{apiState.message}</p>
+          <p className={`api-status api-status--${apiState.kind}`} role="status">{apiState.message}</p>
         </div>
         <button className="button button-secondary" type="button" onClick={handleCheckServer} disabled={apiState.kind === "loading"}>
           {apiState.kind === "loading" ? "Checking…" : "Test connection"}
