@@ -157,11 +157,15 @@ export default function App() {
       });
       const event = mode === "create" ? "create-room" : "join-room";
       const response = await new Promise((resolve) => {
+        const timeout = setTimeout(() => resolve({ ok: false, error: "SERVER_TIMEOUT" }), 15000);
         socket.emit(event, {
           code: code.trim().toUpperCase(),
           title,
           displayName: name.trim() || "게스트",
-        }, resolve);
+        }, (result) => {
+          clearTimeout(timeout);
+          resolve(result);
+        });
       });
       if (!response?.ok) throw new Error(friendlyError(response?.error));
       setMeeting(response.meeting);
@@ -182,6 +186,8 @@ export default function App() {
       ROOM_NOT_FOUND: "회의를 찾을 수 없어요. 코드가 맞는지 확인해 주세요.",
       ROOM_CREATE_FAILED: "회의를 만들지 못했어요. 다시 시도해 주세요.",
       ROOM_JOIN_FAILED: "회의에 참가하지 못했어요. 다시 시도해 주세요.",
+      RATE_LIMITED: "요청이 너무 많아요. 잠시 후 다시 시도해 주세요.",
+      SERVER_TIMEOUT: "서버 응답이 늦어지고 있어요. 잠시 후 다시 시도해 주세요.",
     })[code] || "회의를 시작하지 못했어요. 잠시 후 다시 시도해 주세요.";
   }
 
