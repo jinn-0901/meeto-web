@@ -238,10 +238,21 @@ export default function App() {
       setTimeout(() => setError(""), 2200);
     } catch { setError("회의 코드: " + meeting.code); }
   }
-  function leaveMeeting() {
-    socketRef.current?.disconnect();
+  async function leaveMeeting() {
+    const socket = socketRef.current;
+    if (socket?.connected) {
+      await new Promise((resolve) => {
+        const fallback = setTimeout(resolve, 1800);
+        socket.emit("leave-room", () => {
+          clearTimeout(fallback);
+          resolve();
+        });
+      });
+      socket.disconnect();
+    }
     peersRef.current.forEach((pc) => pc.close());
     peersRef.current.clear();
+    pendingIceRef.current.clear();
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     setLocalStream(null);
@@ -250,7 +261,7 @@ export default function App() {
     setSharing(false);
     setPhase("home");
     setError("");
-    socketRef.current?.connect();
+    socket?.connect();
   }
 
   useEffect(() => {
