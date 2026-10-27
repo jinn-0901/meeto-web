@@ -180,7 +180,6 @@ export default function App() {
       DATABASE_UNAVAILABLE: "서버 데이터베이스가 연결되지 않았어요.",
       INVALID_ROOM_CODE: "회의 코드를 다시 확인해 주세요.",
       ROOM_NOT_FOUND: "회의를 찾을 수 없어요. 코드가 맞는지 확인해 주세요.",
-      ROOM_FULL: "회의 참가 인원(8명)이 가득 찼어요.",
       ROOM_CREATE_FAILED: "회의를 만들지 못했어요. 다시 시도해 주세요.",
       ROOM_JOIN_FAILED: "회의에 참가하지 못했어요. 다시 시도해 주세요.",
     })[code] || "회의를 시작하지 못했어요. 잠시 후 다시 시도해 주세요.";
@@ -276,7 +275,7 @@ export default function App() {
             </div>
             {participants.map((participant) => <RemoteVideo key={participant.id} participant={participant} onRemove={closePeer} />)}
           </div>
-          <p className="participant-count">{participants.length + 1}명 참여 중 · 최대 8명</p>
+          <p className="participant-count">{participants.length + 1}명 참여 중 · 인원 제한 없음</p>
         </section>
         <footer className="call-toolbar">
           <button className={micOn ? "control-button" : "control-button control-off"} onClick={toggleMic}><span>{micOn ? "♩" : "×"}</span>{micOn ? "마이크 켜짐" : "마이크 꺼짐"}</button>
