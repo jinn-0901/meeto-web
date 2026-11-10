@@ -143,6 +143,21 @@ export default function App() {
     setBusy(true);
     setError("");
     try {
+      // For joining, verify that the room exists before requesting camera/microphone access.
+      if (mode === "join") {
+        const normalizedCode = code.trim().toUpperCase();
+        if (!/^[A-HJ-NP-Z2-9]{6}$/.test(normalizedCode)) {
+          throw new Error("INVALID_ROOM_CODE");
+        }
+        const roomResponse = await fetch(`${API_BASE_URL}/api/meetings/${encodeURIComponent(normalizedCode)}`, {
+          headers: { Accept: "application/json" },
+        });
+        const roomData = await roomResponse.json().catch(() => ({}));
+        if (!roomResponse.ok) {
+          throw new Error(roomData.error || "ROOM_LOOKUP_FAILED");
+        }
+      }
+
       const media = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
       streamRef.current = media;
       setLocalStream(media);
@@ -184,6 +199,7 @@ export default function App() {
       DATABASE_UNAVAILABLE: "서버 데이터베이스가 연결되지 않았어요.",
       INVALID_ROOM_CODE: "회의 코드를 다시 확인해 주세요.",
       ROOM_NOT_FOUND: "회의를 찾을 수 없어요. 코드가 맞는지 확인해 주세요.",
+      ROOM_LOOKUP_FAILED: "회의 정보를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.",
       ROOM_CREATE_FAILED: "회의를 만들지 못했어요. 다시 시도해 주세요.",
       ROOM_JOIN_FAILED: "회의에 참가하지 못했어요. 다시 시도해 주세요.",
       RATE_LIMITED: "요청이 너무 많아요. 잠시 후 다시 시도해 주세요.",
