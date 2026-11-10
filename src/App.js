@@ -22,6 +22,8 @@ export default function App() {
   const [phase, setPhase] = useState("home");
   const [name, setName] = useState("");
   const [title, setTitle] = useState("새 회의");
+  const [approvalRequired, setApprovalRequired] = useState(false);
+  const [joinRequests, setJoinRequests] = useState([]);
   const [code, setCode] = useState("");
   const [meeting, setMeeting] = useState(null);
   const [participants, setParticipants] = useState([]);
@@ -97,6 +99,27 @@ export default function App() {
       makePeer(id, true);
     });
     socket.on("participant-left", ({ id }) => closePeer(id));
+    socket.on("join-request", (request) => {
+      setJoinRequests((current) => current.some((item) => item.id === request.id) ? current : [...current, request]);
+    });
+    socket.on("join-request-cancelled", ({ id }) => {
+      setJoinRequests((current) => current.filter((item) => item.id !== id));
+    });
+    socket.on("join-approved", (result) => {
+      if (!result?.ok) return;
+      setMeeting(result.meeting);
+      setParticipants(result.participants || []);
+      setPhase("meeting");
+      setError("");
+    });
+    socket.on("join-denied", () => {
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+      setLocalStream(null);
+      setPhase("home");
+      setError("회의 주최자가 참가 요청을 승인하지 않았어요.");
+      socket.disconnect();
+    });
     socket.on("webrtc-offer", async ({ from, offer }) => {
       const pc = makePeer(from, false);
       if (!pc) return;
@@ -176,6 +199,7 @@ export default function App() {
         socket.emit(event, {
           code: code.trim().toUpperCase(),
           title,
+          approvalRequired: mode === "create" && approvalRequired,
           displayName: name.trim() || "게스트",
         }, (result) => {
           clearTimeout(timeout);
@@ -183,8 +207,14 @@ export default function App() {
         });
       });
       if (!response?.ok) throw new Error(friendlyError(response?.error));
+      if (response.pending) {
+        setPhase("waiting");
+        setError("");
+        return;
+      }
       setMeeting(response.meeting);
       setParticipants(response.participants || []);
+      setJoinRequests([]);
       setPhase("meeting");
     } catch (e) {
       streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -200,6 +230,7 @@ export default function App() {
       INVALID_ROOM_CODE: "회의 코드를 다시 확인해 주세요.",
       ROOM_NOT_FOUND: "회의를 찾을 수 없어요. 코드가 맞는지 확인해 주세요.",
       ROOM_LOOKUP_FAILED: "회의 정보를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.",
+      HOST_UNAVAILABLE: "회의 주최자가 접속 중이 아니에요. 나중에 다시 시도해 주세요.",
       ROOM_CREATE_FAILED: "회의를 만들지 못했어요. 다시 시도해 주세요.",
       ROOM_JOIN_FAILED: "회의에 참가하지 못했어요. 다시 시도해 주세요.",
       RATE_LIMITED: "요청이 너무 많아요. 잠시 후 다시 시도해 주세요.",
@@ -251,6 +282,19 @@ export default function App() {
       setSharing(true);
     } catch { /* User cancelled screen sharing. */ }
   }
+  function approveJoin(participantId) {
+    socketRef.current?.emit("approve-join", { participantId }, (result) => {
+      if (result?.ok) setJoinRequests((current) => current.filter((item) => item.id !== participantId));
+      else setError("참가 요청을 승인하지 못했어요.");
+    });
+  }
+  function rejectJoin(participantId) {
+    socketRef.current?.emit("reject-join", { participantId }, (result) => {
+      if (result?.ok) setJoinRequests((current) => current.filter((item) => item.id !== participantId));
+      else setError("참가 요청을 거절하지 못했어요.");
+    });
+  }
+
   async function copyInvite() {
     const url = new URL(window.location.href);
     url.searchParams.set("room", meeting.code);
@@ -291,6 +335,20 @@ export default function App() {
     if (room) setCode(room.toUpperCase());
   }, []);
 
+  if (phase === "waiting") {
+    return (
+      <main className="home-page">
+        <header className="home-header"><a className="brand" href="./"><span className="brand-icon">m</span> meeto</a></header>
+        <section className="waiting-card">
+          <div className="waiting-mark">…</div>
+          <h1>참가 승인 대기 중</h1>
+          <p>회의 주최자가 참가 요청을 확인하고 있어요.<br />승인되면 자동으로 회의에 입장합니다.</p>
+          <button className="leave-button" onClick={leaveMeeting}>요청 취소</button>
+        </section>
+      </main>
+    );
+  }
+
   if (phase === "meeting" && meeting) {
     return (
       <main className="meeting-page">
@@ -300,6 +358,17 @@ export default function App() {
           <button className="invite-button" onClick={copyInvite}>초대 링크 복사</button>
         </header>
         <section className="call-layout">
+          {meeting.isHost && meeting.approvalRequired && (
+            <section className="approval-panel">
+              <div className="approval-heading"><strong>참가 승인 요청</strong><span>{joinRequests.length}건 대기 중</span></div>
+              {joinRequests.length === 0 ? <p>새로운 참가 요청이 없어요.</p> : joinRequests.map((request) => (
+                <div className="approval-request" key={request.id}>
+                  <span>{request.displayName} 님이 참가를 요청했어요.</span>
+                  <div><button onClick={() => approveJoin(request.id)}>승인</button><button className="reject-button" onClick={() => rejectJoin(request.id)}>거절</button></div>
+                </div>
+              ))}
+            </section>
+          )}
           <div className="video-grid">
             <div className="video-tile local-tile">
               {localStream && <video ref={localVideoRef} autoPlay playsInline muted />}
@@ -336,6 +405,10 @@ export default function App() {
           <input id="display-name" className="text-field" value={name} maxLength={32} onChange={(e) => setName(e.target.value)} placeholder="이름 또는 닉네임" />
           <label className="field-label" htmlFor="meeting-title">회의 이름</label>
           <input id="meeting-title" className="text-field" value={title} maxLength={80} onChange={(e) => setTitle(e.target.value)} placeholder="예: 팀 회의" />
+          <label className="approval-toggle">
+            <input type="checkbox" checked={approvalRequired} onChange={(e) => setApprovalRequired(e.target.checked)} />
+            <span><strong>참가 승인 필요</strong><small>켜면 주최자가 승인한 사람만 회의에 들어올 수 있어요.</small></span>
+          </label>
           <button className="create-button" disabled={busy} onClick={() => startMeeting("create")}>{busy ? "회의 준비 중…" : "새 회의 만들기"} <span>→</span></button>
           <div className="card-divider"><span>또는 코드로 참가</span></div>
           <form className="join-form" onSubmit={(e) => { e.preventDefault(); startMeeting("join"); }}>
